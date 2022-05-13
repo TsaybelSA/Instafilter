@@ -23,6 +23,10 @@ struct ContentView: View {
 	@State private var currentFilter: CIFilter = CIFilter.sepiaTone()
 	@State private var context = CIContext()
 	
+	@State private var showingAlert = false
+	@State private var alertTitle = ""
+	@State private var alertMessage = ""
+	
     var body: some View {
 		NavigationView {
 			VStack {
@@ -85,6 +89,11 @@ struct ContentView: View {
 				Button("Vignette") { setFilter(CIFilter.vignette()) }
 				Button("Cancel", role: .cancel) { }
 			}
+			.alert(alertTitle, isPresented: $showingAlert) {
+				Button("OK") { }
+			} message: {
+				Text(alertMessage)
+			}
 		}
 	}
 	
@@ -100,6 +109,11 @@ struct ContentView: View {
 		guard let processedImage = processedImage else { return }
 		
 		let imageSaver = ImageSaver()
+		
+		imageSaver.successHandler = {
+			alertTitle = "Image was saved in Photo Library"
+			showingAlert = true
+		}
 		
 		imageSaver.errorHandler = {
 			print("Failed to save image! \($0.localizedDescription)")
