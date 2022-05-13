@@ -13,13 +13,15 @@ struct ContentView: View {
 	
 	@State private var image: Image?
 	@State private var inputImage: UIImage?
+	@State private var processedImage: UIImage?
+	
+	@State private var showingFilterSheet = false
 	@State private var showingImagePicker = false
 	@State private var filterIntensity = 0.5
+	@State private var radiusAmount = 1.0
 	
 	@State private var currentFilter: CIFilter = CIFilter.sepiaTone()
 	@State private var context = CIContext()
-	
-	@State private var showingFilterSheet = false
 	
     var body: some View {
 		NavigationView {
@@ -48,6 +50,13 @@ struct ContentView: View {
 				.padding(.vertical)
 				
 				HStack {
+					Text("Radius")
+					Slider(value: $radiusAmount)
+						.onChange(of: radiusAmount) { _ in applyProcessing() }
+				}
+				.padding(.vertical)
+				
+				HStack {
 					Button("Change filter") {
 						showingFilterSheet = true
 					}
@@ -55,6 +64,7 @@ struct ContentView: View {
 					Spacer()
 					
 					Button("Save", action: save)
+						.disabled(processedImage == nil)
 				}
 			}
 			.padding([.horizontal, .bottom])
@@ -67,9 +77,9 @@ struct ContentView: View {
 				Button("Crystallized") { setFilter(CIFilter.crystallize()) }
 				Button("Comic Effect") { setFilter(CIFilter.comicEffect()) }
 				Button("Box Blur") { setFilter(CIFilter.boxBlur()) }
-				Button("Edges") { setFilter(CIFilter.edges()) }
+				Button("Bloom") { setFilter(CIFilter.bloom()) }
 				Button("Gaussian Blur") { setFilter(CIFilter.gaussianBlur()) }
-				Button("Pixellate") { setFilter(CIFilter.pixellate()) }
+				Button("Kaleidoscope") { setFilter(CIFilter.kaleidoscope()) }
 				Button("Sepia Tone") { setFilter(CIFilter.sepiaTone()) }
 				Button("Unsharp Mask") { setFilter(CIFilter.unsharpMask()) }
 				Button("Vignette") { setFilter(CIFilter.vignette()) }
@@ -87,7 +97,15 @@ struct ContentView: View {
 	}
 	
 	private func save() {
+		guard let processedImage = processedImage else { return }
 		
+		let imageSaver = ImageSaver()
+		
+		imageSaver.errorHandler = {
+			print("Failed to save image! \($0.localizedDescription)")
+		}
+		
+		imageSaver.writeToPhotoAlbum(image: processedImage)
 	}
 	
 	private func applyProcessing() {
@@ -97,7 +115,7 @@ struct ContentView: View {
 			currentFilter.setValue(filterIntensity, forKey: kCIInputIntensityKey)
 		}
 		if inputKeys.contains(kCIInputRadiusKey) {
-			currentFilter.setValue(filterIntensity * 200, forKey: kCIInputRadiusKey)
+			currentFilter.setValue(radiusAmount * 200, forKey: kCIInputRadiusKey)
 		}
 		if inputKeys.contains(kCIInputScaleKey) {
 			currentFilter.setValue(filterIntensity * 10, forKey: kCIInputScaleKey)
@@ -108,6 +126,7 @@ struct ContentView: View {
 		if let cgImage = context.createCGImage(outputImage, from: outputImage.extent) {
 			let uiImage = UIImage(cgImage: cgImage)
 			image = Image(uiImage: uiImage)
+			processedImage = uiImage
 		}
 	}
 	
